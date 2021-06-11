@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 
 namespace FemDesign.Calculate
@@ -141,33 +142,11 @@ namespace FemDesign.Calculate
         /// <returns></returns>
         public bool RunFdScript(FdScript fdScript, bool killProcess, bool endSession, bool checkOpenFiles = true)
         {
-            // serialize script
-            fdScript.SerializeFdScript();
+            return RunFdScriptAsync(fdScript, killProcess, endSession, checkOpenFiles).Result;
+        }
 
-            // kill processes
-            if (killProcess)
-            {
-                this.KillProcesses();
-            }
-
-            // Check if files are already open
-            if (checkOpenFiles) {
-                var openFiles = GetOpenFileNames();
-                var filename = fdScript.CmdOpen?.Filename;
-                filename = Path.GetFileName(filename);
-                if (filename != null && openFiles.Contains(filename))
-                {
-                    throw new System.Exception($"File {filename} already open in fd3dstruct process. Please close the file and try again. ");
-                }
-
-                filename = fdScript.CmdSave?.FilePath;
-                filename = Path.GetFileName(filename);
-                if (filename != null && openFiles.Contains(filename))
-                {
-                    throw new System.Exception($"File {filename} already open in fd3dstruct process. Please close the file and try again. ");
-                }
-            }
-
+        public async Task<bool> RunFdScriptAsync(FdScript fdScript, bool killProcess, bool endSession, bool checkOpenFiles = true)
+        {
             string arguments = "/s " + fdScript.FdScriptPath;
             string processPath = fdScript.FdScriptPath;
 
@@ -183,27 +162,30 @@ namespace FemDesign.Calculate
             // start process
             Process process = Process.Start(processStartInfo);
 
-            if (endSession)
-            {
-                process.WaitForExit();
-                return process.HasExited;
-            }
-            else
-            {
-                return process.HasExited;
-            }
+            await process.WaitForExitAsync();
+            return process.HasExited;
         }
 
         public bool RunAnalysis(string struxmlPath, Analysis analysis, List<string> bscPath, string docxTemplatePath, bool endSession, bool closeOpenWindows)
         {
-            FdScript fdScript = FdScript.Analysis(struxmlPath, analysis, bscPath, docxTemplatePath, endSession);
-            return this.RunFdScript(fdScript, closeOpenWindows, endSession, false);
-        }
-        public bool RunDesign(string mode,string struxmlPath, Analysis analysis, Design design, List<string> bscPath, string docxTemplatePath, bool endSession, bool closeOpenWindows)
-        {
-            FdScript fdScript = FdScript.Design(mode, struxmlPath, analysis, design, bscPath, docxTemplatePath, endSession);
-            return this.RunFdScript(fdScript, closeOpenWindows, endSession, false);
+            return RunAnalysisAsync(struxmlPath, analysis, bscPath, docxTemplatePath, endSession, closeOpenWindows).Result;    
         }
 
+        public async Task<bool> RunAnalysisAsync(string struxmlPath, Analysis analysis, List<string> bscPath, string docxTemplatePath, bool endSession, bool closeOpenWindows)
+        {
+            FdScript fdScript = FdScript.Analysis(struxmlPath, analysis, bscPath, docxTemplatePath, endSession);
+            return await this.RunFdScriptAsync(fdScript, closeOpenWindows, endSession, false);
+        }
+
+        public bool RunDesign(string mode,string struxmlPath, Analysis analysis, Design design, List<string> bscPath, string docxTemplatePath, bool endSession, bool closeOpenWindows)
+        {
+            return RunDesignAsync(mode, struxmlPath, analysis, design, bscPath, docxTemplatePath, endSession, closeOpenWindows).Result;
+        }
+
+        public async Task<bool> RunDesignAsync(string mode, string struxmlPath, Analysis analysis, Design design, List<string> bscPath, string docxTemplatePath, bool endSession, bool closeOpenWindows)
+        {
+            FdScript fdScript = FdScript.Design(mode, struxmlPath, analysis, design, bscPath, docxTemplatePath, endSession);
+            return await this.RunFdScriptAsync(fdScript, closeOpenWindows, endSession, false);
+        }
     }
 }
