@@ -30,7 +30,7 @@ namespace FemDesign.Calculate
         /// <summary>
         /// Target version of class library.
         /// </summary>
-        internal string FdTargetVersion = "20";
+        internal string FdTargetVersion = "21";
 
         public Application()
         {
@@ -47,7 +47,14 @@ namespace FemDesign.Calculate
             {
                 // get process information
                 Process firstProcess = processes[0];
-                this.FdPath = firstProcess.MainModule.FileName;
+                try
+                {
+                    this.FdPath = firstProcess.MainModule.FileName;
+                }
+                catch (System.Exception e)
+                {
+                    throw e;
+                }
                 this.FdVersion = firstProcess.MainModule.FileVersionInfo.FileVersion.Split(new char[] { '.' })[0];
             }
             
@@ -199,6 +206,7 @@ namespace FemDesign.Calculate
             FdScript fdScript = FdScript.Analysis(struxmlPath, analysis, bscPath, docxTemplatePath, endSession);
             return this.RunFdScript(fdScript, closeOpenWindows, endSession, false);
         }
+
         public bool RunDesign(string mode,string struxmlPath, Analysis analysis, Design design, List<string> bscPath, string docxTemplatePath, bool endSession, bool closeOpenWindows)
         {
             FdScript fdScript = FdScript.Design(mode, struxmlPath, analysis, design, bscPath, docxTemplatePath, endSession);

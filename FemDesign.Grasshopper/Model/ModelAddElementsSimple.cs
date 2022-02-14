@@ -23,6 +23,8 @@ namespace FemDesign.Grasshopper
             pManager[pManager.ParamCount - 1].Optional = true;
             pManager.AddGenericParameter("LoadCombinations", "LoadCombinations", "Single LoadCombination element or list of LoadCombination elements to add. Nested lists are not supported.", GH_ParamAccess.list);
             pManager[pManager.ParamCount - 1].Optional = true;
+            pManager.AddGenericParameter("LoadGroups", "LoadGroups", "Single LoadGroup element or list of LoadGroup elements to add. Nested lists are not supported.", GH_ParamAccess.list);
+            pManager[pManager.ParamCount - 1].Optional = true;
             pManager.AddBooleanParameter("Overwrite", "Overwrite", "Overwrite elements sharing GUID and mark as modified?", GH_ParamAccess.item, false);
             pManager[pManager.ParamCount - 1].Optional = true;
 
@@ -40,8 +42,6 @@ namespace FemDesign.Grasshopper
                 // pass
             }
 
-            model = model.DeepClone();
-
             List<FemDesign.GenericClasses.IStructureElement> elements = new List<FemDesign.GenericClasses.IStructureElement>();
             DA.GetDataList("Structure Elements", elements);
 
@@ -54,15 +54,20 @@ namespace FemDesign.Grasshopper
             List<FemDesign.Loads.LoadCombination> loadCombinations = new List<FemDesign.Loads.LoadCombination>();
             DA.GetDataList("LoadCombinations", loadCombinations);
 
+            List<FemDesign.Loads.ModelGeneralLoadGroup> loadGroups = new List<FemDesign.Loads.ModelGeneralLoadGroup>();
+            DA.GetDataList("LoadGroups", loadGroups);
+
             bool overwrite = false;
             DA.GetData("Overwrite", ref overwrite);
 
-            model.AddElements(elements, overwrite);
-            model.AddLoads(loads, overwrite);
-            model.AddLoadCases(loadCases, overwrite);
-            model.AddLoadCombinations(loadCombinations, overwrite);
+            var clone = model.DeepClone();
+            clone.AddElements(elements, overwrite);
+            clone.AddLoads(loads, overwrite);
+            clone.AddLoadCases(loadCases, overwrite);
+            clone.AddLoadCombinations(loadCombinations, overwrite);
+            clone.AddLoadGroupTable(loadGroups, overwrite);
 
-            DA.SetData("FdModel", model);
+            DA.SetData("FdModel", clone);
         }
         protected override System.Drawing.Bitmap Icon
         {
@@ -73,7 +78,7 @@ namespace FemDesign.Grasshopper
         }
         public override Guid ComponentGuid
         {
-            get { return new Guid("17494607-2eff-4988-b887-ac3290e63e3b"); }
+            get { return new Guid("1a38b7dc-5421-41cb-a85b-2f584855fd58"); }
         }
     }
 }
